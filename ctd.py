@@ -1,16 +1,15 @@
-from urllib.parse import urlencode, urlparse, parse_qsl
-from urllib.request import urlopen
-import json
 import argparse
-import sys
-import shutil
+import json
 import re
-
+import sys
+from urllib.parse import parse_qsl, urlencode, urlparse
+from urllib.request import urlopen
 
 BASE_URL = "https://api.ceskatelevize.cz/video/v1/playlist-vod/v1/stream-data/media/external/{video_id}"
 
 HTTP_TIMEOUT = 10
 W_MATCH = re.compile(r"\w+")
+CHUNK_SIZE = 1024 * 1024  # 1 MB
 
 
 # "quality": "180p",  # audio/audioad/ad/web/mobile/180p/288p/360p/404p/540p/576p/720p/1080p
@@ -110,4 +109,21 @@ if __name__ == "__main__":
         if args.verbose:
             print(f"Downloading to: {outfn} ({length} bytes)")
         with open(outfn, "wb") as out_file:
-            shutil.copyfileobj(stream_response, out_file)
+            # not using shutil, we want to show progress
+            # shutil.copyfileobj(stream_response, out_file)
+
+            # poor man's tqdm
+            downloaded = 0
+            while True:
+                chunk = stream_response.read(CHUNK_SIZE)
+                if not chunk:
+                    break
+                out_file.write(chunk)
+                downloaded += len(chunk)
+                if args.verbose:
+                    percent = downloaded * 100 / length
+                    print(
+                        f"\rDownloaded {downloaded} / {length} bytes ({percent:.2f}%)",
+                        end="",
+                    )
+        print()
