@@ -99,6 +99,7 @@ if __name__ == "__main__":
     with urlopen(stream_url, timeout=HTTP_TIMEOUT) as stream_response:
         # TODO: error handling
         assert stream_response.headers.get("Content-Type") == "video/mp4"
+        # TODO: progress bar
         length = stream_response.headers.get("Content-Length")
         if not length:
             print("Could not determine content length")
@@ -110,6 +111,3 @@ if __name__ == "__main__":
             print(f"Downloading to: {outfn} ({length} bytes)")
         with open(outfn, "wb") as out_file:
             shutil.copyfileobj(stream_response, out_file)
-
-        # stream_data = stream_response.read()
-        # sys.stdout.buffer.write(stream_data)
