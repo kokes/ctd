@@ -12,4 +12,3 @@ TODO:
 
 - tests
 - logging
-- subtitles

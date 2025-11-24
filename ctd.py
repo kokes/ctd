@@ -40,6 +40,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "-q", "--quality", required=False, help="Requested quality, e.g. 720p"
     )
+    parser.add_argument(
+        "--subtitles", action="store_true", help="Download subtitles if available"
+    )
     parser.add_argument("url", metavar="URL", help="URL of the video page")
     args = parser.parse_args()
 
@@ -93,7 +96,24 @@ if __name__ == "__main__":
     if args.verbose:
         print(f"Final stream URL: {stream_url}")
 
-    # TODO: subtitles
+    if args.subtitles and stream.get("subtitles"):
+        assert len(stream["subtitles"]) == 1, "Expected exactly one subtitle track"
+        raw_subs = [j for j in stream["subtitles"][0]["files"] if j["format"] == "json"]
+        assert len(raw_subs) == 1, "Expected exactly one JSON subtitle file"
+        subs_url = raw_subs[0]["url"]
+        if args.verbose:
+            print(f"Subtitles URL: {subs_url}")
+        with urlopen(subs_url, timeout=HTTP_TIMEOUT) as subs_response:
+            subs_data = json.load(subs_response)
+
+        subfn = f"{title}.srt"
+        if args.verbose:
+            print(f"Downloading subtitles to: {subfn}")
+        with open(subfn, "wt", encoding="utf-8") as subs_file:
+            for item in subs_data:
+                subs_file.write(f"{item['id']}\n")
+                subs_file.write(f"{item['fromTime']} --> {item['toTime']}\n")
+                subs_file.write(f"{item['text']}\n\n")
 
     with urlopen(stream_url, timeout=HTTP_TIMEOUT) as stream_response:
         # TODO: error handling
